@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>單位圓與三角函數圖形</title>
+    <style>
+        /* CSS 樣式 (與上次相同) */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 20px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .container { display: flex; justify-content: space-around; width: 90%; max-width: 1200px; margin-bottom: 20px; }
+        canvas { border: 1px solid #ccc; background-color: #fff; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); }
+        .controls { 
+            width: 90%; 
+            max-width: 1200px; 
+            text-align: center; 
+            padding: 15px; 
+            background-color: #e9e9e9; 
+            border-radius: 8px; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+        }
+        #angle-slider { width: 80%; max-width: 600px; margin: 10px 0; }
+        .value-display { font-size: 1.1em; margin-top: 10px; color: #555; }
+        .function-select-group { margin-bottom: 15px; }
+        .function-select-group label { font-weight: bold; margin-right: 10px; }
+        
+        #function-details {
+            margin-top: 20px; 
+            border-top: 1px solid #ccc; 
+            padding-top: 10px;
+            text-align: left;
+            width: 90%;
+            max-width: 600px;
+            font-size: 1.2em;
+            line-height: 1.6;
+        }
+        #func-definition { font-weight: bold; }
+        #func-calculation { font-family: monospace; color: #007bff; }
+
+        .zoom-controls {
+            margin-top: 15px;
+            padding: 10px 0;
+            border-top: 1px dashed #ccc;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .zoom-control-group {
+            width: 100%;
+            text-align: left;
+        }
+        .zoom-control-group label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .zoom-control-group input[type="range"] {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>單位圓與三角函數圖形演示</h1>
+
+    <div class="container">
+        <canvas id="unit-circle-canvas" width="400" height="400"></canvas>
+
+        <canvas id="graph-canvas" width="600" height="400"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="function-select-group">
+            <label for="function-selector">選擇函數:</label>
+            <select id="function-selector">
+                <option value="sin">y = sin(x)</option>
+                <option value="cos">y = cos(x)</option>
+                <option value="tan">y = tan(x)</option>
+                <option value="cot">y = cot(x)</option>
+                <option value="sec">y = sec(x)</option>
+                <option value="csc">y = csc(x)</option>
+            </select>
+        </div>
+
+        <div class="zoom-controls">
+            <div class="zoom-control-group">
+                <label for="y-limit-slider">
+                    Y 軸顯示範圍: ±<span id="y-limit-value">1.5</span>
+                </label>
+                <input type="range" id="y-limit-slider" min="1" max="100" value="1.5" step="0.5">
+            </div>
+
+            <div class="zoom-control-group">
+                <label for="x-limit-slider">
+                    X 軸顯示範圍 (最大角度): <span id="x-limit-value">360°</span>
+                </label>
+                <input type="range" id="x-limit-slider" min="1" max="100" value="20" step="1">
+            </div>
+        </div>
+        
+        <label for="angle-slider">
+            調整角度 (θ): <span id="angle-value">0.0°</span>
+        </label>
+        <input type="range" id="angle-slider" min="0" max="360" value="0" step="0.1">
+        
+        <div class="value-display">
+            單位圓上點坐標: (x, y) = (cosθ, sinθ) = 
+            (<span id="cos-value">1.00</span>, <span id="sin-value">0.00</span>)
+        </div>
+        
+        <div id="function-details" class="value-display">
+            <p id="func-definition">定義: sin(θ) = 對邊 / 斜邊 (y / r)</p>
+            <p id="func-calculation">計算: sin(0.0°) = 0.00 / 1.00 = 0.00</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 獲取所有 DOM 元素
+            const circleCanvas = document.getElementById('unit-circle-canvas');
+            const circleCtx = circleCanvas.getContext('2d');
+            const graphCanvas = document.getElementById('graph-canvas');
+            const graphCtx = graphCanvas.getContext('2d');
+            const angleSlider = document.getElementById('angle-slider');
+            const functionSelector = document.getElementById('function-selector');
+            
+            // 縮放滑桿及顯示
+            const YLimitSlider = document.getElementById('y-limit-slider');
+            const YLimitValueDisplay = document.getElementById('y-limit-value');
+            const XLimitSlider = document.getElementById('x-limit-slider');
+            const XLimitValueDisplay = document.getElementById('x-limit-value');
+
+            const angleValueDisplay = document.getElementById('angle-value');
+            const cosValueDisplay = document.getElementById('cos-value');
+            const sinValueDisplay = document.getElementById('sin-value');
+            const funcDefinitionDisplay = document.getElementById('func-definition');
+            const funcCalculationDisplay = document.getElementById('func-calculation');
+
+
+            // 畫布設定
+            const CIRCLE_CENTER_X = circleCanvas.width / 2;
+            const CIRCLE_CENTER_Y = circleCanvas.height / 2;
+            const CIRCLE_RADIUS = 150;
+            
+            const GRAPH_WIDTH = graphCanvas.width;
+            const GRAPH_HEIGHT = graphCanvas.height;
+
+            let currentAngle = 0; 
+            let currentFunction = 'sin'; 
+            let isDragging = false; 
+            
+            // 縮放變數
+            let yLimit = 1.5; 
+            let xLimit = 360.0; 
+
+            // --- 核心數學函式 (不變) ---
+            const functions = {
+                'sin': (r) => Math.sin(r), 'cos': (r) => Math.cos(r),
+                'tan': (r) => Math.tan(r), 'cot': (r) => 1 / Math.tan(r),
+                'sec': (r) => 1 / Math.cos(r), 'csc': (r) => 1 / Math.sin(r)
+            };
+
+            // --- 函數相關數據 (不變) ---
+            const funcData = {
+                'sin': { color: '#dc3545', definition: 'sin(θ) = 對邊 / 斜邊 (y / r)', calcFormula: (r, x, y, val) => `sin(${r.toFixed(1)}°) = ${y.toFixed(2)} / 1.00 = ${isFinite(val) ? val.toFixed(2) : '±∞'}` },
+                'cos': { color: '#28a745', definition: 'cos(θ) = 鄰邊 / 斜邊 (x / r)', calcFormula: (r, x, y, val) => `cos(${r.toFixed(1)}°) = ${x.toFixed(2)} / 1.00 = ${isFinite(val) ? val.toFixed(2) : '±∞'}` },
+                'tan': { color: '#ffc107', definition: 'tan(θ) = 對邊 / 鄰邊 (y / x)', calcFormula: (r, x, y, val) => `tan(${r.toFixed(1)}°) = ${y.toFixed(2)} / ${x.toFixed(2)} = ${isFinite(val) ? val.toFixed(2) : '±∞'}` },
+                'cot': { color: '#17a2b8', definition: 'cot(θ) = 鄰邊 / 對邊 (x / y)', calcFormula: (r, x, y, val) => `cot(${r.toFixed(1)}°) = ${x.toFixed(2)} / ${y.toFixed(2)} = ${isFinite(val) ? val.toFixed(2) : '±∞'}` },
+                'sec': { color: '#6f42c1', definition: 'sec(θ) = 斜邊 / 鄰邊 (r / x)', calcFormula: (r, x, y, val) => `sec(${r.toFixed(1)}°) = 1.00 / ${x.toFixed(2)} = ${isFinite(val) ? val.toFixed(2) : '±∞'}` },
+                'csc': { color: '#fd7e14', definition: 'csc(θ) = 斜邊 / 對邊 (r / y)', calcFormula: (r, x, y, val) => `csc(${r.toFixed(1)}°) = 1.00 / ${y.toFixed(2)} = ${isFinite(val) ? val.toFixed(2) : '±∞'}` }
+            };
+            
+            // --- 單位圓繪圖函式 (更新 P 點座標顯示和增加 θ 弧線) ---
+            function drawUnitCircle(angle) {
+                circleCtx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+                const radians = angle * (Math.PI / 180);
+                const x_coord = Math.cos(radians);
+                const y_coord = Math.sin(radians);
+                
+                const pointX = CIRCLE_CENTER_X + x_coord * CIRCLE_RADIUS;
+                const pointY = CIRCLE_CENTER_Y - y_coord * CIRCLE_RADIUS; 
+
+                // 繪製座標軸
+                circleCtx.strokeStyle = '#999'; circleCtx.lineWidth = 1; circleCtx.beginPath();
+                circleCtx.moveTo(0, CIRCLE_CENTER_Y); circleCtx.lineTo(circleCanvas.width, CIRCLE_CENTER_Y);
+                circleCtx.moveTo(CIRCLE_CENTER_X, 0); circleCtx.lineTo(CIRCLE_CENTER_X, circleCanvas.height);
+                circleCtx.stroke();
+
+                // 繪製單位圓
+                circleCtx.beginPath(); circleCtx.arc(CIRCLE_CENTER_X, CIRCLE_CENTER_Y, CIRCLE_RADIUS, 0, 2 * Math.PI);
+                circleCtx.strokeStyle = '#555'; circleCtx.lineWidth = 2; circleCtx.stroke();
+
+                // 繪製有向角 θ 弧線
+                circleCtx.beginPath();
+                circleCtx.arc(CIRCLE_CENTER_X, CIRCLE_CENTER_Y, CIRCLE_RADIUS * 0.4, 0, -radians, true); // 弧線半徑為單位圓的 40%
+                circleCtx.strokeStyle = '#FF0080'; // 黑色弧線
+                circleCtx.lineWidth = 1.5;
+                circleCtx.stroke();
+
+                // 繪製 θ 文字 (調整位置以避開半徑)
+                const thetaLabelRadius = CIRCLE_RADIUS * 0.55; // 比弧線稍微大一點
+                const thetaLabelAngle = radians / 2; // 大約在角度中間
+                const thetaLabelX = CIRCLE_CENTER_X + thetaLabelRadius * Math.cos(thetaLabelAngle);
+                const thetaLabelY = CIRCLE_CENTER_Y - thetaLabelRadius * Math.sin(thetaLabelAngle); // Y 軸向上為負
+                circleCtx.fillStyle = '#000';
+                circleCtx.font = 'italic 16px serif'; // 斜體希臘字母
+                circleCtx.fillText('θ', thetaLabelX, thetaLabelY);
+
+                // 繪製半徑 (R)
+                circleCtx.beginPath(); circleCtx.moveTo(CIRCLE_CENTER_X, CIRCLE_CENTER_Y); circleCtx.lineTo(pointX, pointY);
+                circleCtx.strokeStyle = '#007bff'; circleCtx.lineWidth = 3; circleCtx.stroke();
+                
+                // 繪製 cos (X) 邊長 (綠色)
+                circleCtx.beginPath(); circleCtx.moveTo(CIRCLE_CENTER_X, CIRCLE_CENTER_Y); circleCtx.lineTo(pointX, CIRCLE_CENTER_Y);
+                circleCtx.strokeStyle = funcData['cos'].color; circleCtx.lineWidth = 3; circleCtx.stroke();
+
+                // 繪製 sin (Y) 邊長 (紅色)
+                circleCtx.beginPath(); circleCtx.moveTo(pointX, CIRCLE_CENTER_Y); circleCtx.lineTo(pointX, pointY);
+                circleCtx.strokeStyle = funcData['sin'].color; circleCtx.lineWidth = 3; circleCtx.stroke();
+                
+                // 繪製點 P
+                circleCtx.beginPath(); circleCtx.arc(pointX, pointY, 6, 0, 2 * Math.PI);
+                circleCtx.fillStyle = '#000'; circleCtx.fill();
+                
+                // --- 更新 P 點座標顯示 ---
+                circleCtx.font = '14px Arial';
+                
+                const cosText = `cosθ`;
+                const sinText = `sinθ`;
+                const coordText = `(${x_coord.toFixed(2)},${y_coord.toFixed(2)})`;
+
+                const cosTextWidth = circleCtx.measureText(cosText).width;
+                const sinTextWidth = circleCtx.measureText(sinText).width;
+                
+                const textOffset = 15; 
+
+                circleCtx.fillStyle = '#000';
+                circleCtx.fillText(`P`, pointX + 10, pointY - textOffset - 15); 
+                
+                const definitionX = pointX + 10;
+                const definitionY = pointY - textOffset;
+
+                circleCtx.fillText(`(`, definitionX, definitionY);
+                circleCtx.fillStyle = funcData['cos'].color;
+                circleCtx.fillText(cosText, definitionX + circleCtx.measureText(`(`).width, definitionY);
+                circleCtx.fillStyle = '#000';
+                circleCtx.fillText(`,`, definitionX + circleCtx.measureText(`(`).width + cosTextWidth, definitionY);
+                circleCtx.fillStyle = funcData['sin'].color;
+                circleCtx.fillText(sinText, definitionX + circleCtx.measureText(`(`).width + cosTextWidth + circleCtx.measureText(`,`).width, definitionY);
+                circleCtx.fillStyle = '#000';
+                circleCtx.fillText(`)`, definitionX + circleCtx.measureText(`(`).width + cosTextWidth + circleCtx.measureText(`,`).width + sinTextWidth, definitionY);
+
+                circleCtx.fillStyle = '#000';
+                circleCtx.fillText(coordText, definitionX, definitionY + 18); 
+                
+                angleValueDisplay.textContent = `${angle.toFixed(1)}°`;
+                cosValueDisplay.textContent = `${x_coord.toFixed(2)}`;
+                sinValueDisplay.textContent = `${y_coord.toFixed(2)}`;
+                
+                return { x_coord, y_coord, pointX, pointY }; 
+            }
+
+            // --- 三角函數圖形繪圖函式 (不變) ---
+            function drawGraph(angle, funcName) {
+                graphCtx.clearRect(0, 0, GRAPH_WIDTH, GRAPH_HEIGHT);
+
+                const currentFunc = funcData[funcName];
+                
+                const yMax = yLimit;
+                const yMin = -yLimit;
+                const xAxisY = GRAPH_HEIGHT / 2;
+
+                graphCtx.strokeStyle = '#999'; graphCtx.lineWidth = 1; graphCtx.beginPath();
+                graphCtx.moveTo(0, xAxisY); graphCtx.lineTo(GRAPH_WIDTH, xAxisY); graphCtx.stroke();
+                
+                graphCtx.beginPath(); graphCtx.moveTo(0, 0); graphCtx.lineTo(0, GRAPH_HEIGHT); graphCtx.stroke();
+                
+                const yTickStep = (yMax <= 2) ? 0.5 : (yMax <= 5 ? 1 : 5);
+                
+                graphCtx.fillStyle = '#555'; graphCtx.font = '12px Arial'; graphCtx.textAlign = 'left';
+                
+                for (let yVal = yMin; yVal <= yMax; yVal += yTickStep) {
+                    if (yVal === 0) continue;
+                    const yCanvas = xAxisY - (yVal / yMax) * (GRAPH_HEIGHT / 2); 
+                    if (yCanvas > 0 && yCanvas < GRAPH_HEIGHT) {
+                        graphCtx.fillText(yVal.toFixed(yMax < 2 ? 1 : 0), 5, yCanvas - 3);
+                        graphCtx.beginPath(); graphCtx.moveTo(0, yCanvas); graphCtx.lineTo(GRAPH_WIDTH, yCanvas);
+                        graphCtx.strokeStyle = '#eee'; graphCtx.stroke();
+                    }
+                }
+                
+                const xTickStepDeg = (xLimit > 720) ? 360 : (xLimit > 360 ? 180 : (xLimit > 180 ? 90 : (xLimit > 90 ? 45 : 30)));
+                graphCtx.textAlign = 'center';
+                for (let xDeg = 0; xDeg <= xLimit; xDeg += xTickStepDeg) {
+                    if (xDeg === 0 && xLimit > 0) continue; 
+                    const xCanvas = (xDeg / xLimit) * GRAPH_WIDTH;
+                    if (xCanvas < GRAPH_WIDTH - 5) {
+                        graphCtx.fillText(`${xDeg}°`, xCanvas, xAxisY + 15);
+                    }
+                }
+                graphCtx.fillText(`${xLimit.toFixed(0)}°`, GRAPH_WIDTH - 20, xAxisY + 15);
+
+
+                graphCtx.setLineDash([2, 5]); graphCtx.strokeStyle = '#aaa';
+                const asymptotes = [];
+                if (funcName === 'tan' || funcName === 'sec') {
+                    for (let d = 90; d <= xLimit + 1; d += 180) { asymptotes.push(d); }
+                } 
+                else if (funcName === 'cot' || funcName === 'csc') {
+                    for (let d = 0; d <= xLimit + 1; d += 180) { asymptotes.push(d); }
+                }
+                graphCtx.beginPath();
+                asymptotes.forEach(deg => {
+                    if (deg >= 0 && deg <= xLimit) {
+                        const xCanvas = (deg / xLimit) * GRAPH_WIDTH;
+                        graphCtx.moveTo(xCanvas, 0); graphCtx.lineTo(xCanvas, GRAPH_HEIGHT);
+                    }
+                });
+                graphCtx.stroke();
+                graphCtx.setLineDash([]); 
+
+                graphCtx.beginPath(); graphCtx.strokeStyle = currentFunc.color; graphCtx.lineWidth = 3;
+                let isFirstPoint = true; const step = 0.5; 
+                for (let i = 0; i <= GRAPH_WIDTH; i += step) {
+                    const angle_deg = (i / GRAPH_WIDTH) * xLimit; 
+                    const radians = angle_deg * (Math.PI / 180);
+                    let y_val = functions[funcName](radians);
+                    let isDiscontinuous = false; const tolerance = yMax * 2; 
+                    if (Math.abs(y_val) > tolerance) { isDiscontinuous = true; }
+                    y_val = Math.max(yMin, Math.min(yMax, y_val));
+                    const y_canvas = xAxisY - (y_val / yMax) * (GRAPH_HEIGHT / 2); 
+                    if (isDiscontinuous) { isFirstPoint = true; } 
+                    else if (isFirstPoint) { graphCtx.moveTo(i, y_canvas); isFirstPoint = false; } 
+                    else { graphCtx.lineTo(i, y_canvas); }
+                }
+                graphCtx.stroke();
+
+                const currentRadians = angle * (Math.PI / 180);
+                let currentYVal = functions[funcName](currentRadians);
+                const currentXGraph = (angle / xLimit) * GRAPH_WIDTH;
+                const displayYVal = Math.max(yMin, Math.min(yMax, currentYVal));
+                const currentYGraph = xAxisY - (displayYVal / yMax) * (GRAPH_HEIGHT / 2);
+                
+                if (angle >= 0 && angle <= xLimit) {
+                    graphCtx.beginPath(); graphCtx.moveTo(currentXGraph, xAxisY); graphCtx.lineTo(currentXGraph, currentYGraph);
+                    graphCtx.strokeStyle = currentFunc.color + '80'; graphCtx.lineWidth = 1; graphCtx.stroke();
+                    graphCtx.beginPath(); graphCtx.arc(currentXGraph, currentYGraph, 6, 0, 2 * Math.PI);
+                    graphCtx.fillStyle = currentFunc.color; graphCtx.fill();
+                }
+                
+                return { currentXGraph, currentYGraph, currentYVal };
+            }
+
+            // --- 繪製主函式 (不變) ---
+            function drawAll(angle, funcName) {
+                const { x_coord, y_coord } = drawUnitCircle(angle);
+                const graphData = drawGraph(angle, funcName);
+                const currentFunc = funcData[funcName];
+
+                let rawValue = graphData.currentYVal;
+                if (Math.abs(rawValue) > 1000) { rawValue = rawValue > 0 ? Infinity : -Infinity; } 
+                
+                const calcText = currentFunc.calcFormula(angle, x_coord, y_coord, rawValue)
+                    .replace('±∞', rawValue === Infinity ? '趨近 +∞' : rawValue === -Infinity ? '趨近 -∞' : '±∞'); 
+
+                funcDefinitionDisplay.textContent = `定義: ${currentFunc.definition}`;
+                funcCalculationDisplay.textContent = `計算: ${calcText}`;
+
+                if (angle >= 0 && angle <= xLimit && Math.abs(rawValue) < 1000) { 
+                    graphCtx.beginPath();
+                    graphCtx.moveTo(0, graphData.currentYGraph); graphCtx.lineTo(graphData.currentXGraph, graphData.currentYGraph); 
+                    graphCtx.strokeStyle = currentFunc.color + '40'; graphCtx.setLineDash([5, 5]); graphCtx.stroke();
+                    graphCtx.setLineDash([]); 
+                }
+            }
+            
+            // --- 初始化與事件處理 (不變) ---
+
+            function initializeLimits(func) {
+                let defaultYLimit = (func === 'sin' || func === 'cos') ? 1.5 : 3.0;
+                YLimitSlider.value = defaultYLimit;
+                yLimit = defaultYLimit;
+                YLimitValueDisplay.textContent = `±${defaultYLimit.toFixed(1)}`;
+                
+                XLimitSlider.value = 20; 
+                xLimit = 360.0; 
+                XLimitValueDisplay.textContent = `360°`;
+            }
+
+            YLimitSlider.addEventListener('input', (e) => {
+                const newLimit = parseFloat(e.target.value);
+                yLimit = newLimit;
+                YLimitValueDisplay.textContent = `±${yLimit.toFixed(1)}`;
+                drawAll(currentAngle, currentFunction);
+            });
+
+            XLimitSlider.addEventListener('input', (e) => {
+                const sliderValue = parseFloat(e.target.value);
+                xLimit = (sliderValue / 100) * (1800 - 18) + 18;
+                XLimitValueDisplay.textContent = `${xLimit.toFixed(0)}°`;
+                drawAll(currentAngle, currentFunction);
+            });
+
+            functionSelector.addEventListener('change', (e) => {
+                currentFunction = e.target.value;
+                initializeLimits(currentFunction); 
+                drawAll(currentAngle, currentFunction);
+            });
+            
+            angleSlider.addEventListener('input', (e) => {
+                currentAngle = parseFloat(e.target.value);
+                drawAll(currentAngle, currentFunction);
+            });
+            
+            function getCanvasCoordinates(e) {
+                const rect = circleCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                return { mouseX, mouseY };
+            }
+            
+            circleCanvas.addEventListener('mousedown', (e) => {
+                const { mouseX, mouseY } = getCanvasCoordinates(e);
+                const radians = currentAngle * (Math.PI / 180);
+                const x_coord = Math.cos(radians);
+                const y_coord = Math.sin(radians);
+                const pointX = CIRCLE_CENTER_X + x_coord * CIRCLE_RADIUS;
+                const pointY = CIRCLE_CENTER_Y - y_coord * CIRCLE_RADIUS;
+
+                if (Math.hypot(mouseX - pointX, mouseY - pointY) < 15) {
+                    isDragging = true;
+                    circleCanvas.style.cursor = 'grabbing';
+                }
+            });
+            
+            circleCanvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const { mouseX, mouseY } = getCanvasCoordinates(e);
+                const dx = mouseX - CIRCLE_CENTER_X;
+                const dy = CIRCLE_CENTER_Y - mouseY; 
+
+                let newRadians = Math.atan2(dy, dx);
+                let newAngle = newRadians * (180 / Math.PI);
+
+                if (newAngle < 0) {
+                    newAngle += 360;
+                }
+
+                currentAngle = newAngle;
+                angleSlider.value = currentAngle; 
+                drawAll(currentAngle, currentFunction);
+            });
+            
+            circleCanvas.addEventListener('mouseup', () => {
+                isDragging = false;
+                circleCanvas.style.cursor = 'default';
+            });
+            
+            circleCanvas.addEventListener('mouseleave', () => {
+                    isDragging = false;
+                    circleCanvas.style.cursor = 'default';
+            });
+
+            initializeLimits(currentFunction);
+            drawAll(currentAngle, currentFunction);
+        });
+    </script>
+</body>
+</html>

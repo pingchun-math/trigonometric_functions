@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三角函數圖形動態模擬器 - 最終版本</title>
+    <style>
+        /* 基礎樣式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .graph-area {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden; 
+        }
+
+        /* RWD 佈局：Flexbox */
+        .controls-and-display {
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 20px;
+        }
+
+        .controls {
+            flex: 1 1 300px; 
+            padding: 10px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #c4dafa;
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #1a73e8;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        .value-display {
+            font-weight: bold;
+            color: #d93025;
+            float: right;
+        }
+
+        .formula {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fce8e6;
+            border-radius: 4px;
+            color: #d93025;
+            font-weight: bold;
+        }
+        
+        .legend {
+            text-align: center;
+            padding: 10px 0 5px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin: 0 15px;
+            font-size: 0.9em;
+        }
+        .color-box {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        .zoom-controls {
+            text-align: center;
+            padding: 10px;
+            border-top: 1px solid #c4dafa;
+            margin-top: 15px;
+        }
+        .zoom-controls button {
+            background-color: #34a853;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .zoom-controls button:hover {
+            background-color: #2c8c45;
+        }
+
+
+        /* RWD 斷點 */
+        @media (max-width: 768px) {
+            .controls-and-display {
+                flex-direction: column-reverse; 
+            }
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>三角函數 y = Asin(B(x-C)) + D 圖形動態模擬</h1>
+
+    <div class="controls-and-display">
+
+        <div class="graph-area" style="flex: 2 1 600px;">
+            <canvas id="sinCanvas" width="800" height="400"></canvas>
+            
+            <div class="legend">
+                <span class="legend-item"><span class="color-box" style="background-color: #6c757d;"></span> 基準 y=sin(x)</span>
+                <span class="legend-item"><span class="color-box" style="background-color: #d93025;"></span> 調整後的圖形</span>
+                <span class="legend-item">象限顏色區分 (I, II, III, IV)</span>
+            </div>
+            
+            <div id="dynamicFormula" class="formula">
+                </div>
+        </div>
+
+        <div class="controls">
+            <h2>參數控制</h2>
+
+            <div class="control-group clearfix">
+                <label for="amplitude">A (振幅/垂直伸縮):</label>
+                <span id="A_val" class="value-display">1.0</span>
+                <input type="range" id="amplitude" min="0.5" max="5" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group clearfix">
+                <label for="frequency">B (頻率/水平伸縮):</label>
+                <span id="B_val" class="value-display">1.0</span>
+                <input type="range" id="frequency" min="0.2" max="3" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group clearfix">
+                <label for="phaseShift">C (相移/水平平移):</label>
+                <span id="C_val" class="value-display">0.00 rad</span>
+                <input type="range" id="phaseShift" 
+                       min="-6.28" max="6.28" 
+                       step="0.1745" value="0.0"> 
+            </div>
+
+            <div class="control-group clearfix">
+                <label for="verticalShift">D (垂直平移):</label>
+                <span id="D_val" class="value-display">0.0</span>
+                <input type="range" id="verticalShift" min="-3" max="3" step="0.1" value="0.0">
+            </div>
+
+            <div class="zoom-controls">
+                <h3>圖形縮放 (單位長度)</h3>
+                <button id="zoomOut">- 縮小</button>
+                <button id="zoomIn">+ 放大</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('sinCanvas');
+    const ctx = canvas.getContext('2d');
+    const controls = {
+        A: document.getElementById('amplitude'),
+        B: document.getElementById('frequency'),
+        C: document.getElementById('phaseShift'),
+        D: document.getElementById('verticalShift')
+    };
+    const values = {
+        A: document.getElementById('A_val'),
+        B: document.getElementById('B_val'),
+        C: document.getElementById('C_val'),
+        D: document.getElementById('D_val')
+    };
+    const formulaDisplay = document.getElementById('dynamicFormula');
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+
+    let width = canvas.width;
+    let height = canvas.height;
+    const padding = 30; 
+    
+    let xAxisRange = 4 * Math.PI; 
+    let yAxisRange = 6;           
+    const zoomFactor = 1.2;       
+    
+    let xScale = (width - 2 * padding) / xAxisRange; 
+    let yScale = (height - 2 * padding) / yAxisRange; 
+    
+    const yAxisX = width / 2;
+    const xAxisY = height / 2;
+    
+    // 定義四個象限區間的顏色和標籤
+    const quadrantColors = [
+        { start: 0, end: Math.PI / 2, color: '#FFFACD', label: 'I' }, // 粉黃色 
+        { start: Math.PI / 2, end: Math.PI, color: '#E0EEE0', label: 'II' }, // 粉綠色
+        { start: Math.PI, end: 3 * Math.PI / 2, color: '#ADD8E6', label: 'III' }, // 粉藍色
+        { start: 3 * Math.PI / 2, end: 2 * Math.PI, color: '#E6E6FA', label: 'IV' }  // 粉紫色
+    ];
+
+
+    // --- 輔助函數：將 pi/2 刻度轉換為顯示標籤 ---
+    function formatPiLabel(i) {
+        if (i === 0) return '0';
+        const sign = i < 0 ? '-' : '';
+        const absI = Math.abs(i);
+
+        if (absI % 2 === 0) {
+            const multiple = absI / 2;
+            return sign + (multiple === 1 ? 'π' : multiple + 'π');
+        } else {
+            if (absI === 1) {
+                return sign + 'π/2';
+            } else {
+                return sign + absI + 'π/2';
+            }
+        }
+    }
+    
+    // --- 輔助函數：將弧度值格式化為 π 的分數形式 (用於公式顯示) ---
+    function formatCValue(C) {
+        const tolerance = 0.001; 
+        if (Math.abs(C) < tolerance) {
+            return { display: '0', sign: '' }; 
+        }
+        
+        const C_over_pi = C / Math.PI;
+        // C>0 (右移) => x-C => 顯示 '-' ； C<0 (左移) => x+C => 顯示 '+' 
+        const sign = C < 0 ? '+' : '-'; 
+
+        const commonDenominators = [2, 3, 4, 6, 8, 12, 18];
+        let bestMatch = null;
+        let minError = Infinity;
+
+        for (const den of commonDenominators) {
+            const num = Math.round(C_over_pi * den);
+            const rationalValue = num / den;
+            const error = Math.abs(C_over_pi - rationalValue);
+            
+            if (error < minError && error < 0.05) { 
+                minError = error;
+                bestMatch = { num: Math.abs(num), den: den };
+            }
+        }
+
+        if (bestMatch && bestMatch.num !== 0) {
+            const { num, den } = bestMatch;
+            
+            const commonDivisor = (a, b) => (b === 0 ? a : commonDivisor(b, a % b));
+            const gcd = commonDivisor(num, den);
+            const simplifiedNum = num / gcd;
+            const simplifiedDen = den / gcd;
+
+            if (simplifiedDen === 1) { 
+                return { display: simplifiedNum === 1 ? 'π' : simplifiedNum + 'π', sign: sign };
+            } else if (simplifiedNum === 1) { 
+                 return { display: `π/${simplifiedDen}`, sign: sign };
+            } else { 
+                 return { display: `${simplifiedNum}π/${simplifiedDen}`, sign: sign };
+            }
+        }
+
+        // 如果沒有找到接近的分數，則顯示小數形式
+        return { display: `${Math.abs(C_over_pi).toFixed(2)}π`, sign: sign };
+    }
+
+
+    // --- 輔助函數：繪製單條曲線 ---
+    function plotCurve(A, B, C, D, color) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = color === '#d93025' ? 3 : 2; 
+
+        let first = true;
+        for (let xScreen = padding; xScreen <= width - padding; xScreen++) {
+            const x_math = (xScreen - yAxisX) / xScale;
+            const y_math = A * Math.sin(B * (x_math - C)) + D;
+            const yScreen = height / 2 - y_math * yScale;
+
+            if (first) {
+                ctx.moveTo(xScreen, yScreen);
+                first = false;
+            } else {
+                ctx.lineTo(xScreen, yScreen);
+            }
+        }
+        ctx.stroke();
+    }
+    
+    // --- 繪製象限背景色塊及浮水印 ---
+    function drawQuadrants() {
+        const plotHeight = height - 2 * padding; 
+        const zeroX = yAxisX;
+        const cycleLength = 2 * Math.PI; 
+        
+        const startX_math = (padding - zeroX) / xScale; 
+        const endX_math = (width - padding - zeroX) / xScale;
+        
+        const startCycle = Math.floor(startX_math / cycleLength);
+        const endCycle = Math.ceil(endX_math / cycleLength);
+
+        // 設定浮水印樣式
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.2)'; 
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let cycle = startCycle; cycle < endCycle; cycle++) {
+            const offset = cycle * cycleLength;
+
+            quadrantColors.forEach(q => {
+                const startMath = q.start + offset;
+                const endMath = q.end + offset;
+                
+                const startScreen = zeroX + startMath * xScale;
+                const endScreen = zeroX + endMath * xScale;
+                
+                const drawStart = Math.max(padding, startScreen);
+                const drawEnd = Math.min(width - padding, endScreen);
+                
+                if (drawStart < drawEnd) {
+                    const rectWidth = drawEnd - drawStart;
+
+                    // 1. 繪製顏色區塊
+                    ctx.fillStyle = q.color;
+                    ctx.fillRect(drawStart, padding, rectWidth, plotHeight);
+                    
+                    // 2. 繪製浮水印文字
+                    const centerX = drawStart + rectWidth / 2;
+                    const centerY = height / 2;
+                    
+                    ctx.fillStyle = 'rgba(128, 128, 128, 0.4)'; 
+                    ctx.fillText(q.label, centerX, centerY);
+                }
+            });
+        }
+    }
+
+
+    // --- 繪製座標軸及刻度 (X軸單位為 pi/2) ---
+    function drawAxesAndTicks() {
+        // 重設樣式
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1;
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#555';
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic'; 
+
+        // 繪製 X 軸 (y=0)
+        ctx.beginPath();
+        ctx.moveTo(padding, xAxisY);
+        ctx.lineTo(width - padding, xAxisY);
+        ctx.stroke();
+
+        // 繪製 Y 軸 (x=0)
+        ctx.beginPath();
+        ctx.moveTo(yAxisX, padding);
+        ctx.lineTo(yAxisX, height - padding);
+        ctx.stroke();
+
+        // X 軸刻度：以 pi/2 為單位
+        const xTickStep = Math.PI / 2; 
+        const maxTickIndex = Math.ceil(xAxisRange / xTickStep / 2); 
+
+        for (let i = -maxTickIndex; i <= maxTickIndex; i++) {
+            const x = yAxisX + i * xTickStep * xScale;
+            
+            if (x > padding && x < width - padding) {
+                ctx.beginPath();
+                ctx.moveTo(x, xAxisY - 4);
+                ctx.lineTo(x, xAxisY + 4);
+                ctx.stroke();
+                
+                const label = formatPiLabel(i);
+                
+                if (i !== 0) {
+                    const textWidth = ctx.measureText(label).width;
+                    ctx.fillText(label, x - textWidth / 2, xAxisY + 18);
+                } else {
+                    ctx.fillText('0', x + 5, xAxisY + 18);
+                }
+            }
+        }
+        
+        // Y 軸刻度 (維持 1 單位)
+        const yTickStep = 1;
+        const maxYTick = Math.ceil(yAxisRange / 2 / yTickStep);
+
+        for (let i = -maxYTick; i <= maxYTick; i++) {
+            const y = height / 2 - i * yTickStep * yScale;
+            if (i !== 0 && y > padding && y < height - padding) {
+                ctx.beginPath();
+                ctx.moveTo(yAxisX - 4, y);
+                ctx.lineTo(yAxisX + 4, y);
+                ctx.stroke();
+                ctx.fillText(i.toString(), yAxisX + 8, y + 4);
+            }
+        }
+    }
+
+    // --- 主要繪圖函數 ---
+    function drawGraph() {
+        ctx.clearRect(0, 0, width, height);
+
+        // 取得參數值
+        const A = parseFloat(controls.A.value);
+        const B = parseFloat(controls.B.value);
+        const C = parseFloat(controls.C.value);
+        const D = parseFloat(controls.D.value);
+        
+        // C 值顯示優化 (滑桿值顯示)
+        const C_over_pi_raw = C / Math.PI;
+        let C_display_raw;
+        
+        const tolerance = 0.001; 
+        if (Math.abs(C) < tolerance) {
+            C_display_raw = '0.00 rad';
+        } else if (Math.abs(C_over_pi_raw) > 1 - tolerance && Math.abs(C_over_pi_raw) < 1 + tolerance) {
+             C_display_raw = `${C_over_pi_raw < 0 ? '-' : ''}π rad`;
+        } else {
+            C_display_raw = `${C_over_pi_raw.toFixed(2)}π rad`;
+        }
+        values.C.textContent = C_display_raw;
+
+        // 更新其他顯示值
+        values.A.textContent = A.toFixed(1);
+        values.B.textContent = B.toFixed(1);
+        values.D.textContent = D.toFixed(1);
+
+        // 動態更新公式顯示邏輯 (C以 Pi 呈現)
+        const aStr = A.toFixed(1) === '1.0' ? '' : A.toFixed(1);
+        const dFixed = D.toFixed(1);
+
+        let bStr = B.toFixed(1);
+        if (bStr === '1.0') {
+            bStr = '';
+        }
+
+        const cFormatted = formatCValue(C); 
+        
+        let innerTerm;
+        if (cFormatted.display === '0') { 
+            if (bStr === '') {
+                innerTerm = '(x)';
+            } else {
+                innerTerm = `(${bStr}x)`; 
+            }
+        } else { 
+            const cStr = cFormatted.display;
+            const signC = cFormatted.sign; 
+            
+            if (bStr === '') {
+                innerTerm = `(x ${signC} ${cStr})`; 
+            } else {
+                innerTerm = `(${bStr}(x ${signC} ${cStr}))`; 
+            }
+        }
+        
+        const dStr = dFixed === '0.0' ? '' : `${D >= 0 ? '+' : '-'} ${Math.abs(D).toFixed(1)}`;
+
+        formulaDisplay.innerHTML = `
+            y = ${aStr} \sin${innerTerm} ${dStr}
+        `.replace(/\s+/g, ' ');
+
+        // 繪圖
+        drawQuadrants();
+        drawAxesAndTicks();
+        plotCurve(1, 1, 0, 0, '#6c757d');
+        plotCurve(A, B, C, D, '#d93025');
+    }
+    
+    // --- 縮放處理函數 ---
+    function updateScale() {
+        xScale = (width - 2 * padding) / xAxisRange;
+        yScale = (height - 2 * padding) / yAxisRange;
+    }
+
+    function zoom(direction) {
+        if (direction === 'in') {
+            xAxisRange /= zoomFactor;
+            yAxisRange /= zoomFactor;
+        } else if (direction === 'out') {
+            if (xAxisRange < 65) { 
+                xAxisRange *= zoomFactor;
+                yAxisRange *= zoomFactor;
+            }
+        }
+        updateScale();
+        drawGraph();
+    }
+
+    // --- RWD 調整 ---
+    function resizeCanvas() {
+        const parent = canvas.parentElement;
+        canvas.width = parent.clientWidth;
+        
+        width = canvas.width;
+        height = canvas.height; 
+        
+        updateScale();
+        drawGraph();
+    }
+    
+    // --- 事件監聽器 ---
+    for (const key in controls) {
+        controls[key].addEventListener('input', drawGraph);
+    }
+    
+    zoomInBtn.addEventListener('click', () => zoom('in'));
+    zoomOutBtn.addEventListener('click', () => zoom('out'));
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+</script>
+</body>
+</html>
