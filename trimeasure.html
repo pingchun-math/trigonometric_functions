@@ -129,7 +129,7 @@
             </div>
             <div>
                 <label for="distance_ab">A、B 距離 (公尺）</label>
-                <input type="number" id="distance_ab" value="100" placeholder="100" required>
+                <input type="number" id="distance_ab" value="0" placeholder="0" required>
             </div>
         </div>
 
@@ -137,7 +137,7 @@
             <h3>觀測點 A (仰角 α)</h3>
             <div>
                 <label for="angle_alpha">仰角 (角CAD)(度)</label>
-                <input type="number" id="angle_alpha" value="45" placeholder="45" required>
+                <input type="number" id="angle_alpha" value="0" placeholder="0" required>
             </div>
             <div>
                 <label for="bearing_a">方位：(東或西) (角度) 度 (南或北)</label>
@@ -146,7 +146,7 @@
                         <option value="東">東</option>
                         <option value="西">西</option>
                     </select>
-                    <input type="number" id="a_degrees" value="30" placeholder="0-90"> 度
+                    <input type="number" id="a_degrees" value="0" placeholder="0-90"> 度
                     <select id="a_ns">
                         <option value="北">北</option>
                         <option value="南">南</option>
@@ -159,7 +159,7 @@
             <h3>觀測點 B (仰角 β)</h3>
             <div>
                 <label for="angle_beta">仰角 (角CBD)(度)</label>
-                <input type="number" id="angle_beta" value="30" placeholder="30" required>
+                <input type="number" id="angle_beta" value="0" placeholder="0" required>
             </div>
             <div>
                 <label for="bearing_b">方位：(東或西) (角度) 度 (南或北)</label>
@@ -168,7 +168,7 @@
                         <option value="西">西</option>
                         <option value="東">東</option>
                     </select>
-                    <input type="number" id="b_degrees" value="10" placeholder="0-90"> 度
+                    <input type="number" id="b_degrees" value="0" placeholder="0-90"> 度
                     <select id="b_ns">
                         <option value="北">北</option>
                         <option value="南">南</option>
@@ -486,11 +486,11 @@ document.getElementById('draw-button').addEventListener('click', drawTriangulati
 document.getElementById('reset-button').addEventListener('click', () => {
     // 重設參數值
     document.getElementById('height_cd').value = '0';
-    document.getElementById('distance_ab').value = '100';
-    document.getElementById('angle_alpha').value = '45';
-    document.getElementById('angle_beta').value = '30';
-    document.getElementById('a_degrees').value = '30';
-    document.getElementById('b_degrees').value = '10';
+    document.getElementById('distance_ab').value = '0';
+    document.getElementById('angle_alpha').value = '0';
+    document.getElementById('angle_beta').value = '0';
+    document.getElementById('a_degrees').value = '0';
+    document.getElementById('b_degrees').value = '0';
     document.getElementById('a_ew').value = '東';
     document.getElementById('a_ns').value = '北';
     document.getElementById('b_ew').value = '西';
