@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>三角測量體驗 (最終平面標籤版)</title>
+    <title>三角測量體驗</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -124,19 +124,19 @@
         <div class="setting-group">
             <h3>高塔與地基</h3>
             <div>
-                <label for="height_cd">塔高 CD (h)</label>
+                <label for="height_cd">塔高 CD (h公尺)(可選填)</label>
                 <input type="number" id="height_cd" value="0" placeholder="0 (留空則計算)">
             </div>
             <div>
-                <label for="distance_ab">A、B 距離 (d_AB)</label>
+                <label for="distance_ab">A、B 距離 (公尺）</label>
                 <input type="number" id="distance_ab" value="100" placeholder="100" required>
             </div>
         </div>
 
         <div class="setting-group">
-            <h3>觀測點 A (仰角 $\alpha$)</h3>
+            <h3>觀測點 A (仰角 α)</h3>
             <div>
-                <label for="angle_alpha">仰角 $\angle CAD$ (度)</label>
+                <label for="angle_alpha">仰角 (角CAD)(度)</label>
                 <input type="number" id="angle_alpha" value="45" placeholder="45" required>
             </div>
             <div>
@@ -156,9 +156,9 @@
         </div>
 
         <div class="setting-group">
-            <h3>觀測點 B (仰角 $\beta$)</h3>
+            <h3>觀測點 B (仰角 β)</h3>
             <div>
-                <label for="angle_beta">仰角 $\angle CBD$ (度)</label>
+                <label for="angle_beta">仰角 (角CBD)(度)</label>
                 <input type="number" id="angle_beta" value="30" placeholder="30" required>
             </div>
             <div>
@@ -184,10 +184,10 @@
     <section id="visualization-area">
         <div id="measurement-display">
             **計算結果**<br>
-            CD 長度 (h): <span id="val_cd">N/A</span><br>
-            $\angle CAD$ ($\alpha$): <span id="val_cad">N/A</span><br>
-            $\angle CBD$ ($\beta$): <span id="val_cbd">N/A</span><br>
-            $\angle ACB$ (地面): <span id="val_acb">N/A</span>
+            $CD 長度 (h): <span id="val_cd">N/A</span><br>
+            $角CAD(α): <span id="val_cad">N/A</span><br>
+            $角CBD(β): <span id="val_cbd">N/A</span><br>
+            $角ACB(地面): <span id="val_acb">N/A</span>
         </div>
     </section>
 
