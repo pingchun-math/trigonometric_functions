@@ -3,558 +3,512 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📐 三角測量視覺化體驗 (底部結果優化)</title>
+    <title>三角測量體驗 (最終平面標籤版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
-    
     <style>
-        /* 核心佈局修正：縱向 Flex 容器 */
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            width: 100%;
-            background-color: #f4f7f9; 
-            overflow: hidden; /* 確保主視窗不滾動 */
-        }
-        
-        /* --- 1. 上方：控制面板 --- */
-        #controls { 
-            width: 100%; 
-            height: 450px; 
-            padding: 15px 20px; 
-            background-color: #ffffff; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            overflow-y: auto; 
-            box-sizing: border-box;
-        }
-        h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        
-        /* 輸入區塊配置 */
-        #input-content { display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start; }
-        #input-content > div { width: calc(33% - 14px); min-width: 250px; }
-        .setting-group { margin-bottom: 15px; padding: 15px; border: 1px solid #bdc3c7; border-radius: 6px; }
-        /* (其他控制區CSS略) */
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
-        input[type="number"], select { width: 100px; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .azimuth-input { display: flex; gap: 5px; align-items: center; margin-bottom: 8px; }
-        .azimuth-input select { width: 60px; margin-bottom: 0; }
-        .azimuth-input input[type="number"] { width: 80px; margin-bottom: 0; }
-        .control-buttons { display: flex; flex-direction: column; gap: 8px; }
-        .control-row { display: flex; justify-content: space-between; gap: 10px; }
-        .control-row button { padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; background-color: #f0f0f0; cursor: pointer; flex-grow: 1; }
-        #draw-button { width: 100%; padding: 12px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-
-
-        /* --- 2. 中間：視覺化區 --- */
-        #visualization { 
-            flex-grow: 1; /* 佔滿中間所有剩餘空間 */
-            position: relative; 
-            width: 100%; 
-            box-sizing: border-box;
-        }
-        .css2d-container { position: absolute; top: 0; left: 0; z-index: 10; }
-        .pre-draw-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #2c3e50; background: rgba(255, 255, 255, 0.8); padding: 15px; border-radius: 8px; pointer-events: none; z-index: 30; }
-
-
-        /* --- 3. 底部：結果資訊欄 --- */
-        #results-footer {
-            width: 100%;
-            padding: 10px 20px;
-            box-sizing: border-box;
-            background-color: #34495e; /* 深色背景提供視覺區隔 */
-            color: white;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-        }
-        #results-footer h3 { margin: 0 0 10px 0; color: #f1c40f; border-bottom: 1px solid #5d6d7e; padding-bottom: 5px; }
-        #results-content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        #results-content p { 
+        body {
             margin: 0;
-            width: calc(33% - 20px); /* 三個結果並排 */
-            min-width: 200px;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background-color: #f4f4f4;
         }
-        .data-label { font-weight: bold; color: #f1c40f; }
+
+        #container {
+            display: flex;
+            flex-direction: row; 
+            min-height: 100vh;
+        }
+
+        #input-panel {
+            width: 300px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        input, select {
+            padding: 5px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .bearing-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr 0.5fr; 
+            gap: 5px;
+            align-items: center;
+        }
+        .bearing-inputs select, .bearing-inputs input {
+            width: 100%;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #visualization-area {
+            flex-grow: 1;
+            position: relative;
+            background-color: #eee;
+        }
+
+        #measurement-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        
+        /* 手機介面優化 */
+        @media (max-width: 600px) {
+            #container {
+                flex-direction: column; 
+            }
+            #input-panel {
+                width: auto;
+                order: 1;
+            }
+            #visualization-area {
+                height: 70vh;
+                order: 2;
+            }
+            .bearing-inputs {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div id="controls">
-        <h2>📊 彈性三角測量參數輸入</h2>
-        <div class="input-tip">
-            **坐標系：X=南 (X+), Y=東 (Y+), Z=高塔 (Z+)**<br>
-            **方位角：從 Y+ (正東) 軸順時針旋轉。**
-        </div>
+<div id="container">
+    
+    <section id="input-panel">
+        <h2>📐 參數設定</h2>
         
-        <div id="input-content">
-            <div class="setting-group">
-                <h3>🗼 高塔與距離</h3>
-                <label for="height">高塔 CD 高度 (h, Z軸, 可選填)</label>
-                <input type="number" id="height" value="" min="0" step="0.1">
-                <label for="ab-dist-input">觀測點 AB 距離 (d, 可選填)</label>
-                <input type="number" id="ab-dist-input" value="400" min="0" step="0.1">
+        <div class="setting-group">
+            <h3>高塔與地基</h3>
+            <div>
+                <label for="height_cd">塔高 CD (h)</label>
+                <input type="number" id="height_cd" value="0" placeholder="0 (留空則計算)">
             </div>
-
-            <div class="setting-group">
-                <h3>📍 觀測點 A (C 點為中心)</h3>
-                <label>方位設定</label>
-                <div class="azimuth-input">
-                    <select id="a-dir1"> <option value="E" selected>東</option> <option value="W">西</option> </select>
-                    <span>偏</span>
-                    <select id="a-dir2"> <option value="S" selected>南</option> <option value="N">北</option> </select>
-                    <input type="number" id="a-angle" value="0" min="0" max="90" step="0.1">
-                    <span>度</span>
-                </div>
-                <label for="a-dist">水平距離 AC ($d_A$, 可選填)</label>
-                <input type="number" id="a-dist" value="" min="0" step="0.1">
-                <label for="a-elevation">仰角 $\angle CAD$ ($\theta_A$, 可選填)</label>
-                <input type="number" id="a-elevation" value="30" min="0" max="89.9" step="0.1">
-            </div>
-
-            <div class="setting-group">
-                <h3>📌 觀測點 B (C 點為中心)</h3>
-                <label>方位設定</label>
-                <div class="azimuth-input">
-                    <select id="b-dir1"> <option value="E" selected>東</option> <option value="W">西</option> </select>
-                    <span>偏</span>
-                    <select id="b-dir2"> <option value="S" selected>南</option> <option value="N">北</option> </select>
-                    <input type="number" id="b-angle" value="60" min="0" max="90" step="0.1">
-                    <span>度</span>
-                </div>
-                <label for="b-dist">水平距離 BC ($d_B$, 可選填)</label>
-                <input type="number" id="b-dist" value="" min="0" step="0.1">
-                <label for="b-elevation">仰角 $\angle CBD$ ($\theta_B$, 可選填)</label>
-                <input type="number" id="b-elevation" value="60" min="0" max="89.9" step="0.1">
+            <div>
+                <label for="distance_ab">A、B 距離 (d_AB)</label>
+                <input type="number" id="distance_ab" value="100" placeholder="100" required>
             </div>
         </div>
-
-        <button id="draw-button" onclick="reDrawSafely()">
-            繪製圖形
-        </button>
 
         <div class="setting-group">
-            <h3>🖱️ 圖形控制按鈕</h3>
-            <div class="control-buttons">
-                <div class="control-row">
-                    <button onclick="rotateView('Y-')">⬅️ 水平左轉</button>
-                    <button onclick="rotateView('Y+')">➡️ 水平右轉</button>
-                </div>
-                <div class="control-row">
-                    <button onclick="rotateView('X+')">⬆️ 垂直上仰</button>
-                    <button onclick="rotateView('X-')">⬇️ 垂直下俯</button>
-                </div>
-                <div class="control-row">
-                    <button onclick="zoomView('+')">🔍 放大</button>
-                    <button onclick="zoomView('-')">🔎 縮小</button>
-                </div>
-                <div class="control-row">
-                    <button onclick="panView('UP')">🔼 上移</button>
-                    <button onclick="panView('DOWN')">🔽 下移</button>
-                    <button onclick="panView('LEFT')">◀️ 左移</button>
-                    <button onclick="panView('RIGHT')">▶️ 右移</button>
+            <h3>觀測點 A (仰角 $\alpha$)</h3>
+            <div>
+                <label for="angle_alpha">仰角 $\angle CAD$ (度)</label>
+                <input type="number" id="angle_alpha" value="45" placeholder="45" required>
+            </div>
+            <div>
+                <label for="bearing_a">方位：(東或西) (角度) 度 (南或北)</label>
+                <div class="bearing-inputs">
+                    <select id="a_ew">
+                        <option value="東">東</option>
+                        <option value="西">西</option>
+                    </select>
+                    <input type="number" id="a_degrees" value="30" placeholder="0-90"> 度
+                    <select id="a_ns">
+                        <option value="北">北</option>
+                        <option value="南">南</option>
+                    </select>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="visualization">
-        
-        <div id="pre-draw-message" class="pre-draw-text">
-            👆 請輸入參數並點擊「繪製圖形」
+        <div class="setting-group">
+            <h3>觀測點 B (仰角 $\beta$)</h3>
+            <div>
+                <label for="angle_beta">仰角 $\angle CBD$ (度)</label>
+                <input type="number" id="angle_beta" value="30" placeholder="30" required>
+            </div>
+            <div>
+                <label for="bearing_b">方位：(東或西) (角度) 度 (南或北)</label>
+                <div class="bearing-inputs">
+                    <select id="b_ew">
+                        <option value="西">西</option>
+                        <option value="東">東</option>
+                    </select>
+                    <input type="number" id="b_degrees" value="10" placeholder="0-90"> 度
+                    <select id="b_ns">
+                        <option value="北">北</option>
+                        <option value="南">南</option>
+                    </select>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div id="results-footer">
-        <h3>📊 計算結果與操作說明</h3>
-        <div id="results-content">
-            <p><span class="data-label">塔高 CD (h):</span> <span id="out-cd">N/A</span> m</p>
-            <p><span class="data-label">水平距 AC ($d_A$):</span> <span id="out-ac">N/A</span> m</p>
-            <p><span class="data-label">仰角 ∠CAD ($\theta_A$):</span> <span id="out-cad">N/A</span> °</p>
-            
-            <p><span class="data-label">水平距 BC ($d_B$):</span> <span id="out-bc">N/A</span> m</p>
-            <p><span class="data-label">仰角 ∠CBD ($\theta_B$):</span> <span id="out-cbd">N/A</span> °</p>
-            <p><span class="data-label">兩點距 AB (d):</span> <span id="out-ab">N/A</span> m</p>
-            <p><span class="data-label">地面角 ∠ACB:</span> <span id="out-acb">N/A</span> °</p>
+        <button id="draw-button">🚀 繪製三角測量圖</button>
+        <button id="reset-button">🧹 清除參數</button>
+    </section>
+
+    <section id="visualization-area">
+        <div id="measurement-display">
+            **計算結果**<br>
+            CD 長度 (h): <span id="val_cd">N/A</span><br>
+            $\angle CAD$ ($\alpha$): <span id="val_cad">N/A</span><br>
+            $\angle CBD$ ($\beta$): <span id="val_cbd">N/A</span><br>
+            $\angle ACB$ (地面): <span id="val_acb">N/A</span>
         </div>
-    </div>
+    </section>
 
-    <script>
-        // --- 變數與輔助函式定義 ---
-        let scene, camera, renderer, labelRenderer, controls;
-        const visualizationDiv = document.getElementById('visualization');
-        const DEG_TO_RAD = Math.PI / 180;
+</div>
+
+<script>
+// --- Three.js 設置 ---
+let scene, camera, renderer, controls, directionalLight;
+const visualizationArea = document.getElementById('visualization-area');
+
+function initThree() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xeeeeee); 
+    camera = new THREE.PerspectiveCamera(75, visualizationArea.clientWidth / visualizationArea.clientHeight, 0.1, 1000);
+    camera.position.set(200, 150, 200);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(visualizationArea.clientWidth, visualizationArea.clientHeight);
+    visualizationArea.appendChild(renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.update();
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 5); 
+    scene.add(ambientLight);
+    
+    directionalLight = new THREE.DirectionalLight(0xffffff, 5);
+    directionalLight.position.set(100, 200, 100);
+    scene.add(directionalLight);
+
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update(); 
+        renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', onWindowResize, false);
+}
+
+function onWindowResize() {
+    camera.aspect = visualizationArea.clientWidth / visualizationArea.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(visualizationArea.clientWidth, visualizationArea.clientHeight);
+}
+
+// --- 數學計算與座標轉換 ---
+
+function degToRad(degrees) {
+    return degrees * (Math.PI / 180);
+}
+
+/**
+ * 將方位描述 (東/西 角度度 南/北) 轉換為地圖角度 (北Z+為 0 度，順時針增加)
+ * 坐標定義：北 (Z+) 0度, 西 (X+) 90度, 南 (Z-) 180度, 東 (X-) 270度
+ */
+function bearingToAngle(ew, degrees, ns) {
+    degrees = parseFloat(degrees);
+    let angle = 0;
+
+    if (ew === '東') {
+        if (ns === '北') { // 北東 (NE) -> 第四象限
+            angle = 270 + degrees; 
+        } else if (ns === '南') { // 南東 (SE) -> 第三象限
+            angle = 270 - degrees; 
+        }
+    } else if (ew === '西') {
+        if (ns === '南') { // 南西 (SW) -> 第二象限
+            angle = 90 + degrees; 
+        } else if (ns === '北') { // 北西 (NW) -> 第一象限
+            angle = 90 - degrees; 
+        }
+    }
+    return (angle + 360) % 360; 
+}
+
+
+/**
+ * 將點 C (塔底) 設為 (0, 0, 0)，計算 A 點和 B 點的座標 (X, Y, Z)
+ */
+function polarToCartesian(R, mapAngle) {
+    const angle_from_Z_axis = degToRad(mapAngle);
+
+    // X 座標 (西/東): X+為西, X-為東
+    const x = R * Math.sin(angle_from_Z_axis); 
+    // Z 座標 (北/南): Z+為北, Z-為南
+    const z = R * Math.cos(angle_from_Z_axis); 
+    const y = 0;
+
+    return new THREE.Vector3(x, y, z);
+}
+
+// --- 繪圖邏輯 ---
+
+function clearScene() {
+    for (let i = scene.children.length - 1; i >= 0; i--) {
+        const object = scene.children[i];
+        if (object.type !== 'AmbientLight' && object.type !== 'PerspectiveCamera' && object.type !== 'Object3D' && object.uuid !== directionalLight.uuid) {
+            scene.remove(object);
+        }
+    }
+}
+
+/**
+ * 繪製軸線 (地面) 和方位標示
+ */
+function drawAxes() {
+    
+    const length = 150;
+    const material = new THREE.LineBasicMaterial({ color: 0x808080, linewidth: 3 });
+    const offset = 10;
+    const labelColor = 0xcc0000;
+    const fontSize = 40; // ***字體放大***
+    
+    // 東西軸 (X 軸)
+    let geometryX = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-length, 0, 0),
+        new THREE.Vector3(length, 0, 0)
+    ]);
+    scene.add(new THREE.Line(geometryX, material));
+
+    // 南北軸 (Z 軸)
+    let geometryZ = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, -length),
+        new THREE.Vector3(0, 0, length)
+    ]);
+    scene.add(new THREE.Line(geometryZ, material));
+    
+    // 東 (X-)
+    addTextLabel("東", new THREE.Vector3(-length - offset, 0, 0), labelColor, fontSize); 
+    // 西 (X+)
+    addTextLabel("西", new THREE.Vector3(length + offset, 0, 0), labelColor, fontSize); 
+    // 北 (Z+)
+    addTextLabel("北", new THREE.Vector3(0, 0, length + offset), labelColor, fontSize);
+    // 南 (Z-)
+    addTextLabel("南", new THREE.Vector3(0, 0, -length - offset), labelColor, fontSize);
+}
+
+/**
+ * 增加文字標籤 (平面 Sprite 實現，字體放大)
+ */
+function addTextLabel(text, position, color, fontSize) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    context.font = `Bold ${fontSize}px Arial`; 
+    // 讓畫布根據文字長度調整寬度
+    const textWidth = context.measureText(text).width;
+    canvas.width = textWidth + 10;
+    canvas.height = fontSize + 10;
+    
+    // 重新設定字體和顏色並繪製
+    context.font = `Bold ${fontSize}px Arial`; 
+    context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+    context.fillText(text, 5, fontSize); 
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter; // 提高縮小時的清晰度
+    
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false }); // depthTest: false 確保標籤不被其他物件遮擋
+    const sprite = new THREE.Sprite(spriteMaterial);
+    
+    // 調整 sprite 大小 (與畫布尺寸成比例)
+    sprite.scale.set(canvas.width * 0.5, canvas.height * 0.5, 1); 
+    sprite.position.copy(position);
+    scene.add(sprite);
+}
+
+
+/**
+ * 繪製線段
+ */
+function drawLine(start, end, hexColor, lineWidth = 2) {
+    const material = new THREE.LineBasicMaterial({ color: hexColor, linewidth: lineWidth });
+    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const line = new THREE.Line(geometry, material);
+    scene.add(line);
+    return line;
+}
+
+// --- 主要繪製函式 ---
+
+function drawTriangulation() {
+    clearScene();
+    drawAxes(); 
+    
+    const inputCD = parseFloat(document.getElementById('height_cd').value) || 0;
+    const dAB = parseFloat(document.getElementById('distance_ab').value);
+    const alpha_deg = parseFloat(document.getElementById('angle_alpha').value);
+    const beta_deg = parseFloat(document.getElementById('angle_beta').value);
+    
+    const a_ew = document.getElementById('a_ew').value;
+    const a_ns = document.getElementById('a_ns').value;
+    const a_deg = parseFloat(document.getElementById('a_degrees').value);
+    const mapAngleA = bearingToAngle(a_ew, a_deg, a_ns); 
+
+    const b_ew = document.getElementById('b_ew').value;
+    const b_ns = document.getElementById('b_ns').value;
+    const b_deg = parseFloat(document.getElementById('b_degrees').value);
+    const mapAngleB = bearingToAngle(b_ew, b_deg, b_ns); 
+
+    if (isNaN(dAB) || dAB <= 0 || isNaN(alpha_deg) || isNaN(beta_deg) || a_deg < 0 || a_deg > 90 || b_deg < 0 || b_deg > 90) {
+        alert("請輸入有效的距離和角度（偏轉角度需在 0-90 度之間）。");
+        return;
+    }
+
+    let h_cd = inputCD;
+    let r_ac, r_bc; 
+    const C = new THREE.Vector3(0, 0, 0); 
+    let D; 
+
+    // --- 計算塔高和地面距離 (邏輯不變) ---
+    if (h_cd > 0) {
+        r_ac = h_cd / Math.tan(degToRad(alpha_deg));
+        r_bc = h_cd / Math.tan(degToRad(beta_deg));
+    } else {
+        let angleACB = Math.abs(mapAngleA - mapAngleB);
+        if (angleACB > 180) angleACB = 360 - angleACB;
+        const gamma = degToRad(angleACB);
         
-        // --- 核心初始化函式 ---
-        function initThreeJS() {
-            const oldLabelContainer = document.querySelector('.css2d-container');
-            if (renderer) visualizationDiv.removeChild(renderer.domElement);
-            if (oldLabelContainer) visualizationDiv.removeChild(oldLabelContainer);
-            
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xecf0f1);
-
-            // 尺寸健壯性修正：確保尺寸非零
-            const width = visualizationDiv.offsetWidth || window.innerWidth;
-            const height = visualizationDiv.offsetHeight || window.innerHeight;
-            const aspect = width / height;
-            
-            camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-            camera.up.set(0, 0, 1); // Z 軸為垂直方向
-            
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(width, height);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            visualizationDiv.appendChild(renderer.domElement);
-            
-            labelRenderer = new THREE.CSS2DRenderer();
-            labelRenderer.setSize(width, height);
-            labelRenderer.domElement.className = 'css2d-container'; 
-            visualizationDiv.appendChild(labelRenderer.domElement);
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement); 
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            
-            controls.enableZoom = false; controls.enableRotate = false; controls.enablePan = false;
-            controls.update(); 
-
-            scene.add(new THREE.AmbientLight(0x404040));
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(100, 200, 100);
-            scene.add(directionalLight);
-
-            window.addEventListener('resize', onWindowResize, false);
-            animate();
-        }
-
-        function onWindowResize() {
-            const width = visualizationDiv.clientWidth;
-            const height = visualizationDiv.clientHeight;
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-            labelRenderer.setSize(width, height);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-            labelRenderer.render(scene, camera);
-        }
-
-        // --- 核心互動控制函式 (按鈕操作) ---
-        const ROTATE_STEP = 5 * DEG_TO_RAD; 
-        const PAN_STEP = 50; 
-        const ZOOM_FACTOR = 1.1;
-
-        function rotateView(direction) {
-            if (!controls) return;
-            switch (direction) {
-                case 'Y-': controls.rotateLeft(ROTATE_STEP); break; 
-                case 'Y+': controls.rotateLeft(-ROTATE_STEP); break; 
-                case 'X+': controls.rotateUp(ROTATE_STEP); break; 
-                case 'X-': controls.rotateUp(-ROTATE_STEP); break; 
-            }
-            controls.update();
-        }
-
-        function zoomView(direction) {
-            if (!controls) return;
-            if (direction === '+') {
-                controls.dollyIn(ZOOM_FACTOR); 
-            } else {
-                controls.dollyOut(ZOOM_FACTOR); 
-            }
-            controls.update();
-        }
-
-        function panView(direction) {
-            if (!controls) return;
-            switch (direction) {
-                case 'UP': controls.pan(0, PAN_STEP); break;
-                case 'DOWN': controls.pan(0, -PAN_STEP); break;
-                case 'LEFT': controls.pan(PAN_STEP, 0); break;
-                case 'RIGHT': controls.pan(-PAN_STEP, 0); break;
-            }
-            controls.update();
-        }
+        const tanA = Math.tan(degToRad(alpha_deg));
+        const tanB = Math.tan(degToRad(beta_deg));
         
-        // --- 尺寸安全重繪函式 (綁定到按鈕) ---
-        function reDrawSafely() {
-            // 1. 強制更新渲染器尺寸
-            const width = visualizationDiv.offsetWidth;
-            const height = visualizationDiv.offsetHeight;
-            if (renderer && width > 0 && height > 0) {
-                renderer.setSize(width, height);
-                labelRenderer.setSize(width, height);
-                camera.aspect = width / height;
-                camera.updateProjectionMatrix();
-            } else if (width === 0 || height === 0) {
-                 alert("繪圖區尺寸無效，請檢查瀏覽器窗口大小或等待頁面加載完成。");
-                 return;
-            }
-            
-            // 2. 觸發繪圖
-            draw3DScene();
-        }
+        const denominator = (1 / (tanA * tanA)) + (1 / (tanB * tanB)) - (2 * Math.cos(gamma) / (tanA * tanB));
 
-        // (數學/繪圖輔助函式及核心邏輯保持不變)
-        function azimuthToRadians(dir1, dir2, angleDeg) {
-            if (isNaN(angleDeg)) angleDeg = 0;
-            const angleRad = angleDeg * DEG_TO_RAD;
-            let totalAngleRad = 0;
+        if (denominator <= 0) { alert("輸入的參數在幾何上無法構成一個有效的三角形。"); return; }
+        h_cd = Math.sqrt((dAB * dAB) / denominator);
+        r_ac = h_cd / tanA;
+        r_bc = h_cd / tanB;
+    }
+    
+    D = new THREE.Vector3(0, h_cd, 0); 
+    const A = polarToCartesian(r_ac, mapAngleA); 
+    const B = polarToCartesian(r_bc, mapAngleB); 
 
-            if (dir1 === 'E' && dir2 === 'S') { totalAngleRad = angleRad; }
-            else if (dir1 === 'W' && dir2 === 'S') { totalAngleRad = Math.PI - angleRad; }
-            else if (dir1 === 'W' && dir2 === 'N') { totalAngleRad = Math.PI + angleRad; }
-            else if (dir1 === 'E' && dir2 === 'N') { totalAngleRad = 2 * Math.PI - angleRad; }
-            
-            if (angleDeg === 0) {
-                 if (dir1 === 'W') totalAngleRad = Math.PI;
-                 else totalAngleRad = 0;
-            } else if (angleDeg === 90) {
-                 if (dir2 === 'S') totalAngleRad = Math.PI / 2;
-                 else totalAngleRad = 3 * Math.PI / 2;
-            }
-            
-            return totalAngleRad;
-        }
+    // --- 繪製高塔 (美化) ---
+    const towerRadius = Math.max(r_ac, r_bc) * 0.05; 
+    const towerColor = 0x8b4513; 
 
-        function drawLine(v1, v2, material, isDashed = false) {
-            const points = [v1, v2];
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const line = new THREE.Line(geometry, material);
-            if (isDashed) { line.computeLineDistances(); }
-            return line;
-        }
+    // 1. 塔身 (圓柱)
+    const towerGeometry = new THREE.CylinderGeometry(towerRadius * 0.5, towerRadius * 1.5, h_cd, 32);
+    const towerMaterial = new THREE.MeshPhongMaterial({ color: towerColor, shininess: 30 }); 
+    const tower = new THREE.Mesh(towerGeometry, towerMaterial);
+    tower.position.set(0, h_cd / 2, 0); 
+    scene.add(tower);
 
-        function addSphere(position, color, labelText) {
-            const geometry = new THREE.SphereGeometry(3, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color: color });
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.copy(position);
-            scene.add(sphere);
-            
-            const div = document.createElement('div');
-            div.className = 'label';
-            div.textContent = labelText;
-            const label = new THREE.CSS2DObject(div);
-            label.position.copy(position.clone().add(new THREE.Vector3(0, 0, 5)));
-            scene.add(label);
-        }
-        
-        function addLabel(position, text, className) {
-            const div = document.createElement('div');
-            div.className = className;
-            div.textContent = text;
-            const label = new THREE.CSS2DObject(div);
-            label.position.copy(position);
-            scene.add(label);
-        }
+    // 2. 塔尖 (圓錐)
+    const spireHeight = h_cd * 0.1; 
+    const spireGeometry = new THREE.ConeGeometry(towerRadius * 0.5, spireHeight, 16);
+    const spireMaterial = new THREE.MeshPhongMaterial({ color: 0x404040 }); 
+    const spire = new THREE.Mesh(spireGeometry, spireMaterial);
+    spire.position.set(0, h_cd + spireHeight / 2, 0); 
+    scene.add(spire);
 
-        function drawDefaultScene() {
-            if (!scene) initThreeJS();
-            scene.children.length = 0;
-            
-            const defaultH = 100;
-            const defaultRadius = 150;
-            
-            const C = new THREE.Vector3(0, 0, 0);
-            const D = new THREE.Vector3(0, 0, defaultH);
-            const black = new THREE.LineBasicMaterial({ color: 0x000000 }); 
-            scene.add(drawLine(C, D, black));
-            addSphere(C, 0x000000, "C"); 
-            addSphere(D, 0x000000, "D"); 
+    // 3. 塔底基礎 (圓環)
+    const baseGeometry = new THREE.TorusGeometry(towerRadius * 2, towerRadius * 0.3, 16, 100);
+    const baseMaterial = new THREE.MeshPhongMaterial({ color: 0x696969 }); 
+    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    base.rotation.x = Math.PI / 2; 
+    base.position.set(0, 0, 0);
+    scene.add(base);
+    
+    // --- 繪製連線 ---
+    drawLine(C, A, 0x00ff00, 2); // AC
+    drawLine(A, D, 0x00ff00, 2); // AD
+    drawLine(C, B, 0x0000ff, 2); // BC
+    drawLine(B, D, 0x0000ff, 2); // BD
+    drawLine(A, B, 0xff0000, 2); // AB
 
-            camera.position.set(defaultRadius * 1.0, defaultRadius * 1.0, defaultH * 1.5);
-            controls.target.set(0, 0, defaultH / 2);
-            controls.update();
+    // --- 標示 A, B, C, D 點 (平面呈現，字體放大) ---
+    const labelOffset = 5; 
+    const labelFontSize = 40; // 統一放大字體
+    const labelColor = 0x000000;
+    
+    // C 點 (塔底)
+    addTextLabel("C", C.clone().add(new THREE.Vector3(0, labelOffset, 0)), labelColor, labelFontSize);
+    // D 點 (塔頂)
+    addTextLabel("D", D.clone().add(new THREE.Vector3(0, spireHeight + labelOffset, 0)), labelColor, labelFontSize);
+    // A 點
+    addTextLabel("A", A.clone().add(new THREE.Vector3(0, labelOffset, 0)), labelColor, labelFontSize);
+    // B 點
+    addTextLabel("B", B.clone().add(new THREE.Vector3(0, labelOffset, 0)), labelColor, labelFontSize);
+    
+    // --- 顯示結果 ---
+    document.getElementById('val_cd').textContent = h_cd.toFixed(2);
+    document.getElementById('val_cad').textContent = alpha_deg.toFixed(2) + '°';
+    document.getElementById('val_cbd').textContent = beta_deg.toFixed(2) + '°';
+    let angleACB = Math.abs(mapAngleA - mapAngleB);
+    if (angleACB > 180) angleACB = 360 - angleACB;
+    document.getElementById('val_acb').textContent = angleACB.toFixed(2) + '°';
+    
+    controls.target.set(0, h_cd / 2, 0);
+    controls.update();
+}
 
-            updateOutputPanel(NaN, NaN, NaN, { CAD: NaN, CBD: NaN, ACB: NaN, AB: NaN });
-            
-            document.getElementById('pre-draw-message').style.display = 'block';
-        }
+// --- 事件監聽 ---
+document.getElementById('draw-button').addEventListener('click', drawTriangulation);
+document.getElementById('reset-button').addEventListener('click', () => {
+    // 重設參數值
+    document.getElementById('height_cd').value = '0';
+    document.getElementById('distance_ab').value = '100';
+    document.getElementById('angle_alpha').value = '45';
+    document.getElementById('angle_beta').value = '30';
+    document.getElementById('a_degrees').value = '30';
+    document.getElementById('b_degrees').value = '10';
+    document.getElementById('a_ew').value = '東';
+    document.getElementById('a_ns').value = '北';
+    document.getElementById('b_ew').value = '西';
+    document.getElementById('b_ns').value = '北';
+    
+    clearScene();
+    drawAxes();
+    
+    document.getElementById('val_cd').textContent = 'N/A';
+    document.getElementById('val_cad').textContent = 'N/A';
+    document.getElementById('val_cbd').textContent = 'N/A';
+    document.getElementById('val_acb').textContent = 'N/A';
+});
 
-        function solveTriangle(input, angleACB) {
-            let { h, dA, dB, thetaA, thetaB, d } = input;
-            
-            const cotA = thetaA > 0 && thetaA < 90 ? (1 / Math.tan(thetaA * DEG_TO_RAD)) : NaN;
-            const cotB = thetaB > 0 && thetaB < 90 ? (1 / Math.tan(thetaB * DEG_TO_RAD)) : NaN;
-            
-            if (!isNaN(cotA) && !isNaN(cotB) && d > 0 && isNaN(h) && isNaN(dA) && isNaN(dB)) {
-                const cosACB = Math.cos(angleACB);
-                const term = cotA * cotA + cotB * cotB - 2 * cotA * cotB * cosACB;
-                
-                if (term > 1e-6) { 
-                    h = Math.sqrt((d * d) / term);
-                    dA = h * cotA;
-                    dB = h * cotB;
-                    if (h > 0 && dA > 0 && dB > 0) return { h, dA, dB, d };
-                } else {
-                    return null;
-                }
-            }
+// 初始化 Three.js 和繪製初始軸線
+initThree();
+drawAxes(); 
 
-            if (h > 0) {
-                if (isNaN(dA) && !isNaN(cotA)) dA = h * cotA;
-                if (isNaN(dB) && !isNaN(cotB)) dB = h * cotB;
-            }
-
-            if (isNaN(h)) {
-                if (dA > 0 && !isNaN(cotA)) h = dA / cotA;
-                else if (dB > 0 && !isNaN(cotB)) h = dB / cotB;
-            }
-
-            if (h > 0 && dA > 0 && dB > 0) {
-                const dCalc = Math.sqrt(dA * dA + dB * dB - 2 * dA * dB * Math.cos(angleACB));
-                d = isNaN(d) || d === 0 ? dCalc : d;
-                return { h, dA, dB, d: dCalc };
-            }
-            
-             if (h > 0 && d > 0 && dA > 0) {
-                const a = 1;
-                const b = -2 * dA * Math.cos(angleACB);
-                const c = dA * dA - d * d;
-                const discriminant = b * b - 4 * a * c;
-                if (discriminant >= 0) {
-                    dB = (-b + Math.sqrt(discriminant)) / (2 * a);
-                    if (dB > 0) return { h, dA, dB, d };
-                }
-            }
-            if (h > 0 && d > 0 && dB > 0) {
-                const a = 1;
-                const b = -2 * dB * Math.cos(angleACB);
-                const c = dB * dB - d * d;
-                const discriminant = b * b - 4 * a * c;
-                if (discriminant >= 0) {
-                    dA = (-b + Math.sqrt(discriminant)) / (2 * a);
-                    if (dA > 0) return { h, dA, dB, d };
-                }
-            }
-            
-            return null;
-        }
-
-
-        function draw3DScene() {
-            document.getElementById('pre-draw-message').style.display = 'none';
-
-            const getNum = (id) => {
-                const val = document.getElementById(id).value;
-                return val === "" ? NaN : parseFloat(val);
-            };
-
-            const input = {
-                h: getNum('height'), d: getNum('ab-dist-input'), dA: getNum('a-dist'), dB: getNum('b-dist'),
-                thetaA: getNum('a-elevation'), thetaB: getNum('b-elevation'),
-                aDir1: document.getElementById('a-dir1').value, aDir2: document.getElementById('a-dir2').value, aAngle: getNum('a-angle'),
-                bDir1: document.getElementById('b-dir1').value, bDir2: document.getElementById('b-dir2').value, bAngle: getNum('b-angle')
-            };
-            
-            const aRad = azimuthToRadians(input.aDir1, input.aDir2, input.aAngle);
-            const bRad = azimuthToRadians(input.bDir1, input.bDir2, input.bAngle);
-            let radACB = Math.abs(aRad - bRad);
-            if (radACB > Math.PI) {
-                radACB = 2 * Math.PI - radACB;
-            }
-            
-            const solution = solveTriangle(input, radACB);
-
-            if (!solution) {
-                alert("錯誤：輸入條件不足或數據矛盾。請檢查是否提供了至少三個獨立條件。");
-                drawDefaultScene();
-                return;
-            }
-
-            const { h, dA, dB, d } = solution;
-            
-            scene.children.length = 0; 
-            
-            const C = new THREE.Vector3(0, 0, 0);
-            const D = new THREE.Vector3(0, 0, h); 
-
-            const Ax = dA * Math.sin(aRad);
-            const Ay = dA * Math.cos(aRad);
-            const A = new THREE.Vector3(Ax, Ay, 0);
-
-            const Bx = dB * Math.sin(bRad);
-            const By = dB * Math.cos(bRad);
-            const B = new THREE.Vector3(Bx, By, 0);
-
-            const maxDist = Math.max(dA, dB, h, d, 100);
-            
-            // 攝影機優化
-            camera.position.set(maxDist * 1.2, maxDist * 2.5, maxDist * 1.5);
-            controls.target.set(0, 0, h / 2);
-            controls.update();
-
-            // 繪製連線 (只保留連線和點)
-            const black = new THREE.LineBasicMaterial({ color: 0x000000 });
-            const green = new THREE.LineBasicMaterial({ color: 0x27ae60 });
-            const blue = new THREE.LineBasicMaterial({ color: 0x3498db });
-            const red = new THREE.LineBasicMaterial({ color: 0xe74c3c });
-            const greenDashed = new THREE.LineDashedMaterial({ color: 0x27ae60, dashSize: 5, gapSize: 3 });
-            const blueDashed = new THREE.LineDashedMaterial({ color: 0x3498db, dashSize: 5, gapSize: 3 });
-            
-            scene.add(drawLine(C, D, black)); 
-            scene.add(drawLine(C, A, green)); 
-            scene.add(drawLine(C, B, blue)); 
-            scene.add(drawLine(A, B, red)); 
-            scene.add(drawLine(A, D, greenDashed, true)); 
-            scene.add(drawLine(B, D, blueDashed, true)); 
-            
-            // 繪製四個點
-            addSphere(C, 0x000000, "C"); addSphere(D, 0x000000, "D"); 
-            addSphere(A, 0x27ae60, "A"); addSphere(B, 0x3498db, "B");
-
-            // 7. 輸出結果
-            const finalThetaA = Math.atan(h / dA) * 180 / Math.PI;
-            const finalThetaB = Math.atan(h / dB) * 180 / Math.PI;
-            
-            const results = {
-                CAD: finalThetaA.toFixed(2),
-                CBD: finalThetaB.toFixed(2),
-                ACB: (radACB * 180 / Math.PI).toFixed(2),
-                AB: d.toFixed(2)
-            };
-
-            updateOutputPanel(h, dA, dB, results);
-        }
-
-        function updateOutputPanel(h, dA, dB, results) {
-            document.getElementById('out-cd').textContent = isNaN(h) ? "N/A" : h.toFixed(2);
-            document.getElementById('out-ac').textContent = isNaN(dA) ? "N/A" : dA.toFixed(2);
-            document.getElementById('out-cad').textContent = isNaN(results.CAD) ? "N/A" : results.CAD;
-            document.getElementById('out-bc').textContent = isNaN(dB) ? "N/A" : dB.toFixed(2);
-            document.getElementById('out-cbd').textContent = isNaN(results.CBD) ? "N/A" : results.CBD;
-            document.getElementById('out-ab').textContent = isNaN(results.AB) ? "N/A" : results.AB;
-            document.getElementById('out-acb').textContent = isNaN(results.ACB) ? "N/A" : results.ACB;
-        }
-
-        // 網頁載入後，先初始化 Three.js 場景，然後繪製預設場景
-        window.onload = function() {
-            initThreeJS();
-            drawDefaultScene();
-            
-            // 載入時自動填入您提供的參數，方便測試
-            document.getElementById('ab-dist-input').value = 400;
-            document.getElementById('a-elevation').value = 30;
-            document.getElementById('a-dir1').value = 'E';
-            document.getElementById('a-dir2').value = 'S';
-            document.getElementById('a-angle').value = 0;
-            document.getElementById('b-elevation').value = 60;
-            document.getElementById('b-dir1').value = 'E';
-            document.getElementById('b-dir2').value = 'S';
-            document.getElementById('b-angle').value = 60;
-        };
-    </script>
-
+</script>
 </body>
 </html>
